@@ -1,0 +1,14 @@
+Test,std_vector_ms,my_vector_ms
+push_back,31.4092,30.0204
+reserve_push_back,10.5947,3.91345
+random_write,24.7942,29.5513
+sequential_read,2.07111,2.59147
+random_read,50.4805,66.3454
+range_iteration,1.86962,2.18336
+erase_front,24258.6,24754.7
+middle_insert,7121.09,7473.31
+pop_back,0.000892,0.000941
+clear_refill,2.2392,2.09669
+copy_constructor,13.0729,13.0734
+move_constructor,0.001933,0.001903
+move_assignment,0.002554,0.001572

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cstring>
+#include <type_traits>
 #include <initializer_list>
 
 /*
@@ -53,23 +54,54 @@ class Vector {
 
         //Copy Constructor (deep copy)
         Vector(const Vector& rhs) 
-        : currsize(rhs.currsize), cap(rhs.cap), mainarr(new T[cap]) {
-            for(size_t i = 0; i<currsize; i++) {
-                mainarr[i] = rhs.mainarr[i];
+        : currsize(rhs.currsize), cap(rhs.cap) {
+            mainarr = new T[rhs.cap];
+            if constexpr (std::is_trivially_copyable_v<T>) {
+                std::memcpy(mainarr, rhs.mainarr, rhs.currsize*sizeof(T));
+            }
+            else {
+                for(size_t i = 0; i<rhs.currsize; i++) {
+                    mainarr[i] = rhs.mainarr[i];
+                }
             }
         }
 
         //Copy Assignment Operator
         Vector& operator=(const Vector& rhs) {
             if(this == &rhs) return *this;
-            currsize = rhs.currsize;
-            cap = rhs.cap;
-            T* newarr = new T[cap];
-            for(size_t i = 0; i<currsize; i++) {
-                newarr[i] = rhs.mainarr[i];
+            T* newarr = new T[rhs.cap];
+            if constexpr (std::is_trivially_copyable_v<T>) {
+                std::memcpy(newarr, rhs.mainarr, rhs.currsize*sizeof(T));
+            }
+            else {
+                for(size_t i = 0; i<rhs.currsize; i++) {
+                    newarr[i] = rhs.mainarr[i];
+                }
             }
             delete[] mainarr;
             mainarr = newarr;
+            currsize = rhs.currsize;
+            cap = rhs.cap;
+            return *this;
+        }
+
+        //Move Constructor
+        Vector(Vector&& rhs) noexcept
+        : currsize(rhs.currsize), cap(rhs.cap), mainarr(rhs.mainarr)
+        {
+            rhs.cap = rhs.currsize = 0;
+            rhs.mainarr = nullptr;
+        }
+
+        //Move Assignment Operator
+        Vector& operator=(Vector&& rhs) noexcept {
+            if(this == &rhs) return *this;
+            currsize = rhs.currsize;
+            cap = rhs.cap;
+            delete[] mainarr;
+            mainarr = rhs.mainarr;
+            rhs.currsize = rhs.cap = 0;
+            rhs.mainarr = nullptr;
             return *this;
         }
 
@@ -302,7 +334,7 @@ T* Vector<T>::mv() {
     return newarr;
 }
 
-//Function mv
+//Function cpy
 template <typename T>
 T* Vector<T>::cpy() {
     T* newarr = new T[cap];

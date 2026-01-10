@@ -186,6 +186,31 @@ void benchmark(const string& name) {
         cout << "copy constructor          : " << t.ms() << " ms\n";
         sink = copy.size();
     }
+        // ---------------------------------------------------
+    // 12. move constructor
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 1);
+
+        Timer t;
+        Vec moved = std::move(v);
+        cout << "move constructor          : " << t.ms() << " ms\n";
+        sink = moved.size();
+    }
+
+    // ---------------------------------------------------
+    // 13. move assignment
+    {
+        Vec src(N);
+        iota(src.begin(), src.end(), 1);
+
+        Vec dst;   // empty destination
+
+        Timer t;
+        dst = std::move(src);
+        cout << "move assignment           : " << t.ms() << " ms\n";
+        sink = dst.size();
+    }
 
     cout << endl;
 }
