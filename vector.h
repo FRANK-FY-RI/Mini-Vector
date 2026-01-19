@@ -185,12 +185,14 @@ class Vector {
         void push_back(const T& val) {
             if(full()) grow();
             construct(mainarr+currsize, val);
+            currsize++;
         }
 
         //Function push_back with rvalue
         void push_back(T&& val) {
             if(full()) grow();
             construct(mainarr+currsize, std::move(val));
+            currsize++;
         }
 
         //Function pop_back
@@ -267,8 +269,13 @@ class Vector {
         void reserve(size_t n) {
             if(cap>=n) return;
             T* newarr = allocate(n);
-            for(size_t i = 0; i<currsize; i++) {
-                construct(newarr+i, std::move(mainarr[i]));
+            if constexpr (std::is_trivially_copyable_v<T>) {
+                memcpy(newarr, mainarr, currsize*sizeof(T));
+            }
+            else {
+                for(size_t i = 0; i<currsize; i++) {
+                    construct(newarr+i, std::move(mainarr[i]));
+                }
             }
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 destroy_all(mainarr, currsize);
