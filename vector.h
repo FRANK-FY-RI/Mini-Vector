@@ -6,38 +6,62 @@
 #include <iterator>
 #include <cstring>
 #include <type_traits>
+#include <memory>
+#include <scoped_allocator>
 #include <initializer_list>
 
-/*
-The following vector has a design limitation in several areas causing wastage of memory
-until the vector is destroyed, like pop_back, clear and erase.
-The elemets to be erased is not destroyed because deleting it may cause duplicate
-delete afterwards during reallocation of memory when vector becomes is full or
-when the destructor is called.
-*/
 
-template <typename T>
+
+template <typename T, typename Alloc = std::allocator<T>>
 class Vector {
     private:
         size_t currsize, cap;
+        Alloc alloc;
         T *mainarr;
         void grow();
-        T* mv();
-        T* cpy();
+
+        using traits = std::allocator_traits<Alloc>;
+
+        T* allocate(size_t n) {
+            return n?traits::allocate(alloc, n) : nullptr;
+        }
+
+        void deallocate(T* ptr, size_t n) {
+            if(ptr != nullptr) traits::deallocate(alloc, ptr, n);
+        }
+
+        template <typename... Args>
+        void construct(T* ptr, Args&&... args) {
+            traits::construct(alloc, ptr, std::forward<Args>(args)...);
+        }
+
+        void destroy(T* ptr) {
+            traits::destroy(alloc, ptr);
+        }
+
+        void destroy_all(T* ptr, size_t n) {
+            for(size_t i = 0; i<n; i++) {
+                traits::destroy(alloc, ptr+i);
+            }
+        }
+
     public:
         //Default Constructor
-        Vector() : currsize(0), cap(1), mainarr(new T[cap]) {}
+        Vector() : currsize(0), cap(1), mainarr(allocate(cap)) {}
 
         //Constructor with given size only
         Vector(size_t givensize) 
-        : currsize(givensize), cap(std::max<size_t>(1, 2*givensize)), mainarr(new T[cap]()) {}
+        : currsize(givensize), cap(std::max<size_t>(1, 2*givensize)), mainarr(allocate(cap)) {
+            for(size_t i = 0; i<givensize; i++) {
+                construct(mainarr+i);
+            }
+        }
 
         //Constructor with given size and value
         Vector(size_t givensize, const T& value)
-        : currsize(givensize), cap(std::max<size_t>(1, 2*givensize)) {
-            mainarr = new T[cap];
+        : currsize(givensize), cap(std::max<size_t>(1, 2*givensize)) , mainarr(allocate(cap)){
             for(size_t i = 0; i<givensize; i++) {
-                mainarr[i] = value;
+                construct(mainarr+i, value);
             }
         }
         
@@ -45,23 +69,23 @@ class Vector {
         Vector(std::initializer_list<T> l) {
             currsize = l.size();
             cap = std::max<size_t>((size_t)1, 2*currsize);
-            mainarr = new T[cap];
+            mainarr = allocate(cap);
             size_t i = 0;
             for(const auto x:l) {
-                mainarr[i++] = x;
+                construct(mainarr+i, x);
+                i++;
             }
         }
 
         //Copy Constructor (deep copy)
         Vector(const Vector& rhs) 
-        : currsize(rhs.currsize), cap(rhs.cap) {
-            mainarr = new T[rhs.cap];
+        : currsize(rhs.currsize), cap(rhs.cap) , mainarr(allocate(cap)) {
             if constexpr (std::is_trivially_copyable_v<T>) {
                 std::memcpy(mainarr, rhs.mainarr, rhs.currsize*sizeof(T));
             }
             else {
                 for(size_t i = 0; i<rhs.currsize; i++) {
-                    mainarr[i] = rhs.mainarr[i];
+                    construct(mainarr+i, rhs.mainarr[i]);
                 }
             }
         }
@@ -69,16 +93,19 @@ class Vector {
         //Copy Assignment Operator
         Vector& operator=(const Vector& rhs) {
             if(this == &rhs) return *this;
-            T* newarr = new T[rhs.cap];
+            T* newarr = allocate(rhs.cap);
             if constexpr (std::is_trivially_copyable_v<T>) {
                 std::memcpy(newarr, rhs.mainarr, rhs.currsize*sizeof(T));
             }
             else {
                 for(size_t i = 0; i<rhs.currsize; i++) {
-                    newarr[i] = rhs.mainarr[i];
+                    construct(newarr+i, rhs.mainarr[i]);
                 }
             }
-            delete[] mainarr;
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                destroy_all(mainarr, currsize);
+            }
+            deallocate(mainarr, cap);
             mainarr = newarr;
             currsize = rhs.currsize;
             cap = rhs.cap;
@@ -96,9 +123,12 @@ class Vector {
         //Move Assignment Operator
         Vector& operator=(Vector&& rhs) noexcept {
             if(this == &rhs) return *this;
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                destroy_all(mainarr, currsize);
+            }
+            deallocate(mainarr, cap);
             currsize = rhs.currsize;
             cap = rhs.cap;
-            delete[] mainarr;
             mainarr = rhs.mainarr;
             rhs.currsize = rhs.cap = 0;
             rhs.mainarr = nullptr;
@@ -107,25 +137,25 @@ class Vector {
 
         //Destructor
         ~Vector() {
-            delete[] mainarr;
-            mainarr = nullptr;
+            destroy_all(mainarr, currsize);
+            deallocate(mainarr, cap);
         }
 
         //Operator[]
         T& operator[](int index) {
-            assert(index>=0 && index<currsize);
+            assert(index>=0 && index<(int)currsize);
             return mainarr[index];
         }
 
         //Operator[] for const
         const T& operator[](int index) const {
-            assert(index>=0 && index<currsize);
+            assert(index>=0 && index<(int)currsize);
             return mainarr[index];
         }
         
         //Function at()
         T& at(int index) {
-            if(index<0 || index>=currsize) {
+            if(index<0 || index>=(int)currsize) {
                 throw std::out_of_range("Index out of bounds");
             }
             return mainarr[index];
@@ -166,7 +196,16 @@ class Vector {
         //Function pop_back
         void pop_back() {
             assert(currsize>0);
+            destroy(mainarr+currsize-1);
             currsize--;
+        }
+
+        //Function emplace_back
+        template <typename... Args>
+        void emplace_back(Args&&... args) {
+            if(full()) grow();
+            construct(mainarr+currsize, std::forward<Args>(args)...);
+            currsize++;
         }
 
         
@@ -227,35 +266,53 @@ class Vector {
         //Function reserve
         void reserve(size_t n) {
             if(cap>=n) return;
+            T* newarr = allocate(n);
+            for(size_t i = 0; i<currsize; i++) {
+                construct(newarr+i, std::move(mainarr[i]));
+            }
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                destroy_all(mainarr, currsize);
+            }
+            deallocate(mainarr, cap);
             cap = n;
-            T* newarr = mv();
-            delete[] mainarr;
             mainarr = newarr;
         }
 
         //Function resize
         void resize(size_t size) {
-            if(size<=currsize) currsize = size;
+            if(size<=currsize) {
+                for(size_t i = size; i<currsize; i++) {
+                    destroy(mainarr+i);
+                }
+                currsize = size;
+            }
             else {
                 for(size_t i = currsize; i<size; i++) {
-                    this->push_back(T());
+                    this->emplace_back(T());
                 }
             }
         }
-
+        
         //Function resize with val
         void resize(size_t size, const T& val) {
-            if(size<=currsize) currsize = size;
+            if(size<=currsize) {
+                for(size_t i = size; i<currsize; i++) {
+                    destroy(mainarr+i);
+                }
+                currsize = size;
+            }
             else {
                 for(size_t i = currsize; i<size; i++) {
-                    this->push_back(val);
+                    this->emplace_back(val);
                 }
             }
         }
 
         //Function clear
-        //clear only resets currsize; objects remain alive until vector destruction
         void clear() {
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                destroy_all(mainarr, currsize);
+            }
             currsize = 0;
         }
 
@@ -265,95 +322,122 @@ class Vector {
             assert(ind>=(this->begin()) && ind<(this->end()));
             size_t i = ind - this->begin();
             for(; i<currsize-1; i++) {
-                mainarr[i] = mainarr[i+1];
+                construct(mainarr+i, std::move(mainarr[i+1]));
+            }
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                destroy(mainarr+currsize-1);
             }
             currsize--;
         }
-
+        
         //Function erase range
         void erase(iterator begin, iterator end) {
-            assert(begin <= end);
+            assert(begin < end);
             assert(begin >= this->begin());
             assert(end <= this->end());
-            size_t size = currsize - (end - begin);
-            cap = std::max<size_t>(1, 2*size);
-            T* newarr = new T[cap];
-            iterator it = this->begin();
-            size_t i = 0;
-            while(it != begin) {
-                newarr[i++] = *(it++);
+            size_t r = end - this->begin();
+            size_t l = begin - this->begin();
+            while(r<currsize) {
+                construct(mainarr+l, std::move(mainarr[r]));
+                r++;
+                l++;
             }
-            it = end;
-            while(it != this->end()) {
-                newarr[i++] = *(it++);
+            if constexpr (!std::is_trivially_destructible_v<T>) {
+                for(size_t i = l; i<currsize; i++) {
+                    destroy(mainarr+i);
+                }
             }
-            delete[] mainarr;
-            mainarr = newarr;
-            currsize = size;
+            currsize = currsize - (end-begin);
         }
 
-        //Function insert
+        //Function insert with lvalue
         void insert(iterator ind, const T& val) {
             assert(ind>=(this->begin()) && ind<=(this->end()));
             size_t pos = ind - this->begin();
+            if(pos == currsize) {
+                this->emplace_back(val);
+                return;
+            }
             if(currsize+1 > cap) {
-                cap *= 2;
-                T* newarr = new T[cap];
+                T* newarr = allocate(2*cap);
                 for(size_t i = 0; i<pos; i++) {
-                    newarr[i] = mainarr[i];
+                    construct(newarr+i, std::move(mainarr[i]));
                 }
-                newarr[pos] = val;
                 for(size_t i = currsize; i>pos; i--) {
-                    newarr[i] = mainarr[i-1];
+                    construct(newarr+i, std::move(mainarr[i-1]));
+                    
                 }
-                delete[] mainarr;
+                construct(newarr+pos, val);
+                if constexpr (!std::is_trivially_destructible_v<T>) {
+                    destroy_all(mainarr, currsize);
+                }
+                deallocate(mainarr, cap);
+                cap *= 2;
                 mainarr = newarr;
                 currsize++;
                 return;
             }
-            for(size_t i = currsize; i>pos; i--) {
-                mainarr[i] = mainarr[i-1];
+            construct(mainarr+currsize, std::move(mainarr[currsize-1]));
+            for(size_t i = currsize-1; i>pos; i--) {
+                mainarr[i] = std::move(mainarr[i-1]);
             }
             mainarr[pos] = val;
             currsize++;
         }
+
+        //Function insert with rvalue
+        void insert(iterator ind, T&& val) {
+            assert(ind>=(this->begin()) && ind<=(this->end()));
+            size_t pos = ind - this->begin();
+            if(pos == currsize) {
+                this->emplace_back(std::move(val));
+                return;
+            }
+            if(currsize+1 > cap) {
+                T* newarr = allocate(2*cap);
+                for(size_t i = 0; i<pos; i++) {
+                    construct(newarr+i, std::move(mainarr[i]));
+                }
+                for(size_t i = currsize; i>pos; i--) {
+                    construct(newarr+i, std::move(mainarr[i-1]));
+                    
+                }
+                construct(newarr+pos, std::move(val));
+                if constexpr (!std::is_trivially_destructible_v<T>) {
+                    destroy_all(mainarr, currsize);
+                }
+                deallocate(mainarr, cap);
+                cap *= 2;
+                mainarr = newarr;
+                currsize++;
+                return;
+            }
+            construct(mainarr+currsize, std::move(mainarr[currsize-1]));
+            for(size_t i = currsize-1; i>pos; i--) {
+                mainarr[i] = std::move(mainarr[i-1]);
+            }
+            mainarr[pos] = std::move(val);
+            currsize++;
+        }
+
 };
 
-//Function mv
-template <typename T>
-T* Vector<T>::mv() {
-    T* newarr = new T[cap];
-    if constexpr (std::is_trivially_copyable_v<T>) {
-        std::memcpy(newarr, mainarr, currsize*sizeof(T));
-    }
-    else {
-        for(size_t i = 0; i<currsize; i++) {
-            newarr[i] = std::move(mainarr[i]);
-        }
-    }
-    return newarr;
-}
-
-//Function cpy
-template <typename T>
-T* Vector<T>::cpy() {
-    T* newarr = new T[cap];
-    if constexpr (std::is_trivially_copyable_v<T>) {
-        std::memcpy(newarr, mainarr, currsize*sizeof(T));
-    }
-    else {
-        for(size_t i = 0; i<currsize; i++) {
-            newarr[i] = mainarr[i];
-        }
-    }
-    return newarr;
-}
-
 //Function grow
-template <typename T>
-void Vector<T>::grow() {
+template <typename T, typename Alloc>
+void Vector<T, Alloc>::grow() {
+    T* newarr = allocate(2*cap);
+    if constexpr (std::is_trivially_copyable_v<T>) {
+        std::memcpy(newarr, mainarr, sizeof(T)*currsize);
+    }
+    else {
+        for(size_t i = 0; i<currsize; i++) {
+            construct(newarr+i, std::move(mainarr[i]));
+        }
+    }
+    if constexpr (!std::is_trivially_destructible_v<T>) {
+        destroy_all(mainarr, currsize);
+    }
+    deallocate(mainarr, cap);
     cap *= 2;
-    T* newarr = mv();
-    delete[] mainarr;
     mainarr = newarr;
 }

@@ -1,231 +1,247 @@
-#include <bits/stdc++.h>
 #include "vector.h"
-using namespace std;
+#include <vector>
+#include <chrono>
+
 using ll = long long;
-using Clock = chrono::steady_clock;
 
-static volatile ll sink;
+const size_t N = 5e6;
+const size_t M = 5e4;
 
-constexpr int N  = 5'000'000;
-constexpr int M  = 1'000'000;
-constexpr int MID_OPS = 200'000;
-
-// =====================================================
-//                    TIMER
-// =====================================================
-struct Timer {
-    Clock::time_point start;
-    Timer() { start = Clock::now(); }
-    double ms() const {
-        return chrono::duration<double, milli>(Clock::now() - start).count();
-    }
-};
-
-
-// =====================================================
-//                  RANDOM
-// =====================================================
-static uint32_t rng_state = 123456789;
-inline uint32_t fast_rand() {
+u_int16_t rng_state = 123456789;
+inline u_int16_t fast_rand() {
     rng_state ^= rng_state << 13;
     rng_state ^= rng_state >> 17;
     rng_state ^= rng_state << 5;
     return rng_state;
 }
 
-
-
-// =====================================================
-//                   BENCH
-// =====================================================
-template<typename Vec>
-void benchmark(const string& name) {
-    cout << "\n====================================\n";
-    cout << "Benchmarking: " << name << "\n";
-    cout << "====================================\n";
-
-    // ---------------------------------------------------
-    // 1. push_back + SPACE
-    {
-        Vec v;
-
-        Timer t;
-        for(int i = 0; i < N; i++) v.push_back(i);
-
-        cout << "push_back                 : " << t.ms() << " ms\n";
-        sink = v.size();
+inline void iota(auto st, auto end, int st_val) {
+    while(st != end) {
+        *st = st_val;
+        st_val++;
+        st++;
     }
-
-    // ---------------------------------------------------
-    // 2. reserve + push_back
-    {
-        Vec v;
-        if constexpr (requires(Vec x) { x.reserve(N); })
-            v.reserve(N);
-
-        Timer t;
-        for(int i = 0; i < N; i++) v.push_back(i);
-
-        cout << "reserve + push_back       : " << t.ms() << " ms\n";
-        sink = v.size();
-    }
-
-    // ---------------------------------------------------
-    // 3. random write
-    {
-        Vec v(N);
-        Timer t;
-        for(int i = 0; i < N; i++) {
-            int idx = fast_rand() % N;
-            v[idx] = i;
-        }
-        cout << "random write              : " << t.ms() << " ms\n";
-        sink = v[0];
-    }
-
-    // ---------------------------------------------------
-    // 4. sequential read
-    {
-        Vec v(N);
-        iota(v.begin(), v.end(), 1);
-
-        Timer t;
-        ll sum = 0;
-        for(int i = 0; i < N; i++) sum += v[i];
-        cout << "sequential read           : " << t.ms() << " ms\n";
-        sink = sum;
-    }
-
-    // ---------------------------------------------------
-    // 5. random read
-    {
-        Vec v(N);
-        iota(v.begin(), v.end(), 1);
-
-        Timer t;
-        ll sum = 0;
-        for(int i = 0; i < N; i++) {
-            int idx = fast_rand() % N;
-            sum += v[idx];
-        }
-        cout << "random read               : " << t.ms() << " ms\n";
-        sink = sum;
-    }
-
-    // ---------------------------------------------------
-    // 6. range-for iteration
-    {
-        Vec v(N);
-        iota(v.begin(), v.end(), 1);
-
-        Timer t;
-        ll sum = 0;
-        for(auto &x : v) sum += x;
-        cout << "range iteration           : " << t.ms() << " ms\n";
-        sink = sum;
-    }
-
-    // ---------------------------------------------------
-    // 7. front erase stress
-    {
-        Vec v;
-        for(int i = 0; i < M; i++) v.push_back(i);
-
-        Timer t;
-        for(int i = 0; i < M / 2; i++) {
-            v.erase(v.begin());
-        }
-        cout << "erase front stress        : " << t.ms() << " ms\n";
-        sink = v.size();
-    }
-
-    // ---------------------------------------------------
-    // 8. middle insert stress
-    {
-        Vec v;
-        for(int i = 0; i < M; i++) v.push_back(i);
-
-        Timer t;
-        for(int i = 0; i < MID_OPS; i++) {
-            int pos = v.size() / 2;
-            v.insert(v.begin() + pos, i);
-        }
-        cout << "middle insert stress      : " << t.ms() << " ms\n";
-        sink = v.size();
-    }
-
-    // ---------------------------------------------------
-    // 9. pop_back
-    {
-        Vec v(N);
-        Timer t;
-        while(!v.empty()) v.pop_back();
-        cout << "pop_back                  : " << t.ms() << " ms\n";
-        sink = v.size();
-    }
-
-    // ---------------------------------------------------
-    // 10. clear + refill
-    {
-        Vec v(N);
-        Timer t;
-        v.clear();
-        for(int i = 0; i < N; i++) v.push_back(i);
-        cout << "clear + refill            : " << t.ms() << " ms\n";
-        sink = v.size();
-    }
-
-    // ---------------------------------------------------
-    // 11. copy constructor
-    {
-        Vec v(N);
-        iota(v.begin(), v.end(), 1);
-
-        Timer t;
-        Vec copy = v;
-        cout << "copy constructor          : " << t.ms() << " ms\n";
-        sink = copy.size();
-    }
-        // ---------------------------------------------------
-    // 12. move constructor
-    {
-        Vec v(N);
-        iota(v.begin(), v.end(), 1);
-
-        Timer t;
-        Vec moved = std::move(v);
-        cout << "move constructor          : " << t.ms() << " ms\n";
-        sink = moved.size();
-    }
-
-    // ---------------------------------------------------
-    // 13. move assignment
-    {
-        Vec src(N);
-        iota(src.begin(), src.end(), 1);
-
-        Vec dst;   // empty destination
-
-        Timer t;
-        dst = std::move(src);
-        cout << "move assignment           : " << t.ms() << " ms\n";
-        sink = dst.size();
-    }
-
-    cout << endl;
 }
 
-// =====================================================
-//                     MAIN
-// =====================================================
+
+template <typename Vec>
+void benchmark(const std::string& s) {
+    std::cout<<"Benchmarking "<<s<<"\n";
+    std::cout<<"------------------------------------------------"<<"\n";
+
+    //push_back
+    {
+        Vec v;
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            v.push_back(i);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>> (end-start);
+        std::cout<<"push_back                :"<<duration.count()<<"ms\n";
+    }
+    
+    //emplace_back
+    {
+        Vec v;
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            v.emplace_back(i);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>> (end-start);
+        std::cout<<"emplace_back             :"<<duration.count()<<"ms\n";
+    }
+    
+    //reserve+push_back
+    {
+        Vec v;
+        auto start = std::chrono::high_resolution_clock::now();
+        v.reserve(N);
+        auto end = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            v.push_back(i);
+        }
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"reserve+push_back        :"<<duration.count()<<"ms\n";
+    }
+    
+    //sequential read
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 0);
+    
+        auto start = std::chrono::high_resolution_clock::now();
+        ll sum = 0;
+        for(size_t i = 0; i<N; i++) {
+            sum += v[i];
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"sequential_read          :"<<duration.count()<<"ms\n";
+    }
+    
+    //random read
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 0);
+    
+        auto start = std::chrono::high_resolution_clock::now();
+        ll sum = 0;
+        for(size_t i = 0; i<N; i++) {
+            int ind = fast_rand() % N;
+            sum += v[ind];
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"random_read              :"<<duration.count()<<"ms\n";
+    }
+    
+    //sequential write
+    {
+        Vec v(N);
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            v[i] = i;
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"sequential write         :"<<duration.count()<<"ms\n";
+    }
+    
+    //random write
+    {
+        Vec v(N);
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            int ind = fast_rand();
+            v[ind] = i;
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"random write             :"<<duration.count()<<"ms\n";
+    }
+    
+    //range-for iteration
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 0);
+        ll sum = 0;
+        auto start = std::chrono::high_resolution_clock::now();
+        for(auto it:v) {
+            sum += it;
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"range-for iteration      :"<<duration.count()<<"ms\n";
+    }
+    
+    //front erase stress test
+    {
+        Vec v(M);
+        iota(v.begin(), v.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<M; i++) {
+            v.erase(v.begin());
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"front erase stress test  :"<<duration.count()<<"ms\n";
+    }
+    
+    //front insert stress test
+    {
+        Vec v;
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<M; i++) {
+            v.insert(v.begin(), i);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"front insert stress test :"<<duration.count()<<"ms\n";
+    }
+    
+    //pop_back
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        for(size_t i = 0; i<N; i++) {
+            v.pop_back();
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"pop_back                 :"<<duration.count()<<"ms\n";
+    }
+    
+    //clear+refill
+    {
+        Vec v(N);
+        iota(v.begin(), v.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        v.clear();
+        for(size_t i = 0; i<N; i++) {
+            v.emplace_back(i);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"clear+refill             :"<<duration.count()<<"ms\n";
+    }
+    
+    //copy contr
+    {
+        Vec v1(N);
+        iota(v1.begin(), v1.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        Vec v2(v1);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"Copy Constructor         :"<<duration.count()<<"ms\n";
+    }
+    
+    //copy assignment
+    {
+        Vec v1(N);
+        iota(v1.begin(), v1.end(), 0);
+        Vec v2(100000);
+        iota(v2.begin(), v2.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        v2 = v1;
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"Copy Assignment          :"<<duration.count()<<"ms\n";
+    }
+    
+    //move contr
+    {
+        Vec v1(N);
+        iota(v1.begin(), v1.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        Vec v2(move(v1));
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"Move Constructor         :"<<duration.count()<<"ms\n";
+    }
+    
+    //move assignment
+    {
+        Vec v1(N);
+        iota(v1.begin(), v1.end(), 0);
+        Vec v2(100000);
+        iota(v2.begin(), v2.end(), 0);
+        auto start = std::chrono::high_resolution_clock::now();
+        v2 = move(v1);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(end-start);
+        std::cout<<"Move Assignment          :"<<duration.count()<<"ms\n";
+    }
+    std::cout<<"\n";
+}
+
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    using StdVec = vector<int>;
-
-    benchmark<StdVec>("std::vector<int>");
+    std::ios::sync_with_stdio(0);
+    std::cin.tie(nullptr);
     benchmark<Vector<int>>("MyVector<int>");
-
+    benchmark<std::vector<int>>("std::vector<int>");
     return 0;
 }

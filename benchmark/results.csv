@@ -1,14 +1,18 @@
-Test,std_vector_ms,my_vector_ms
-push_back,35.9858,33.7261
-reserve + push_back,10.7884,3.30925
-random write,28.0102,29.3644
-sequential read,2.51798,2.36096
-random read,71.2828,73.9593
-range iteration,2.41675,1.68741
-erase front stress,24393.7,22204.0
-middle insert stress,6976.21,7167.03
-pop_back,0.000601,0.000461
-clear + refill,3.04891,3.36292
-copy constructor,16.4226,16.4355
-move constructor,0.002204,0.002314
-move assignment,0.001863,0.001323
+Test,MyVector_ms,StdVector_ms
+push_back,61.6425,119.46
+emplace_back,87.9658,91.7471
+reserve+push_back,0.011832,0.000892
+sequential_read,10.8511,8.27885
+random_read,37.7363,37.0136
+sequential_write,11.0967,8.44137
+random_write,35.5296,35.5919
+range_for_iteration,5.13931,30.8524
+front_erase_stress_test,10934.3,69.9932
+front_insert_stress_test,2614.49,64.9178
+pop_back,20.5702,13.7982
+clear+refill,79.2,80.3588
+Copy_Constructor,12.3268,5.63968
+Copy_Assignment,12.0968,12.3358
+Move_Constructor,0.00008,0.00007
+Move_Assignment,0.001012,0.000961
+
