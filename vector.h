@@ -184,13 +184,13 @@ class Vector {
         //Function push_back with lvalue
         void push_back(const T& val) {
             if(full()) grow();
-            mainarr[currsize++] = val;
+            construct(mainarr+currsize, val);
         }
 
         //Function push_back with rvalue
         void push_back(T&& val) {
             if(full()) grow();
-            mainarr[currsize++] = std::move(val);
+            construct(mainarr+currsize, std::move(val));
         }
 
         //Function pop_back
