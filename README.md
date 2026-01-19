@@ -35,9 +35,9 @@ This project focuses on **manual memory management, copy/move semantics, perform
 ## ✨ Features
 
 * ✅ Dynamic resizing
+* ✅ Custom Allocator Support
 * ✅ Deep copy (copy constructor & copy assignment)
 * ✅ Move semantics (move constructor & move assignment)
-* ✅ Manual memory management (`new[]` / `delete[]`)
 * ✅ Optimized copying for trivially copyable types
 * ✅ Bounds-safe operations (with assertions)
 * ✅ Performance benchmarking vs `std::vector`
@@ -47,10 +47,13 @@ This project focuses on **manual memory management, copy/move semantics, perform
 ## 🧠 Implemented Operations
 
 * `push_back`
+* `emplace_back`
 * `pop_back`
 * `reserve`
 * `clear`
 * `resize`
+* `insert`
+* `erase`
 * Copy constructor
 * Copy assignment operator
 * Move constructor
@@ -58,7 +61,7 @@ This project focuses on **manual memory management, copy/move semantics, perform
 * Initializer list constructor
 * Indexing operator `operator[]`
 * Iterators
-* Size & capacity management
+* Size & capacity
 
 ---
 
@@ -69,7 +72,7 @@ This project focuses on **manual memory management, copy/move semantics, perform
 From the project root:
 
 ```bash
-g++ -std=c++23 -O3 -march=native benchmark.cpp -o bench
+g++ -std=c++23 -O2 benchmark.cpp -o bench
 ```
 
 > Compiler tested: **GCC**
@@ -83,13 +86,17 @@ g++ -std=c++23 -O3 -march=native benchmark.cpp -o bench
 This prints timing results for multiple operations such as:
 
 * push_back
+* emplace_back
 * reserve + push_back
-* random write
 * sequential read
 * random read
-* erase stress
-* middle insert stress
+* sequential write
+* random write
+* range-for iteration
+* front erase stress
+* front insert stress
 * copy constructor
+* copy assignment
 * move constructor
 * move assignment
 
@@ -133,7 +140,6 @@ This project was built to:
 
 * Exception safety guarantees
 * Small buffer optimization
-* Custom allocator support
 * More benchmark scenarios
 
 ---
