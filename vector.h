@@ -1,4 +1,3 @@
-#include <iostream>
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
@@ -329,7 +328,7 @@ class Vector {
             assert(ind>=(this->begin()) && ind<(this->end()));
             size_t i = ind - this->begin();
             for(; i<currsize-1; i++) {
-                construct(mainarr+i, std::move(mainarr[i+1]));
+                mainarr[i] = std::move(mainarr[i+1]);
             }
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 destroy(mainarr+currsize-1);
@@ -345,7 +344,7 @@ class Vector {
             size_t r = end - this->begin();
             size_t l = begin - this->begin();
             while(r<currsize) {
-                construct(mainarr+l, std::move(mainarr[r]));
+                mainarr[l] = std::move(mainarr[r]);
                 r++;
                 l++;
             }
