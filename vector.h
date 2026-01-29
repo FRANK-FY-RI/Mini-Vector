@@ -1,3 +1,6 @@
+#ifndef VECTOR_H
+#define VECTOR_H
+
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
@@ -273,7 +276,7 @@ class Vector {
             }
             else {
                 for(size_t i = 0; i<currsize; i++) {
-                    construct(newarr+i, std::move(mainarr[i]));
+                    construct(newarr+i, std::move_if_noexcept(mainarr[i]));
                 }
             }
             if constexpr (!std::is_trivially_destructible_v<T>) {
@@ -328,7 +331,7 @@ class Vector {
             assert(ind>=(this->begin()) && ind<(this->end()));
             size_t i = ind - this->begin();
             for(; i<currsize-1; i++) {
-                mainarr[i] = std::move(mainarr[i+1]);
+                mainarr[i] = std::move_if_noexcept(mainarr[i+1]);
             }
             if constexpr (!std::is_trivially_destructible_v<T>) {
                 destroy(mainarr+currsize-1);
@@ -344,7 +347,7 @@ class Vector {
             size_t r = end - this->begin();
             size_t l = begin - this->begin();
             while(r<currsize) {
-                mainarr[l] = std::move(mainarr[r]);
+                mainarr[l] = std::move_if_noexcept(mainarr[r]);
                 r++;
                 l++;
             }
@@ -367,10 +370,10 @@ class Vector {
             if(currsize+1 > cap) {
                 T* newarr = allocate(2*cap);
                 for(size_t i = 0; i<pos; i++) {
-                    construct(newarr+i, std::move(mainarr[i]));
+                    construct(newarr+i, std::move_if_noexcept(mainarr[i]));
                 }
                 for(size_t i = currsize; i>pos; i--) {
-                    construct(newarr+i, std::move(mainarr[i-1]));
+                    construct(newarr+i, std::move_if_noexcept(mainarr[i-1]));
                     
                 }
                 construct(newarr+pos, val);
@@ -383,9 +386,9 @@ class Vector {
                 currsize++;
                 return;
             }
-            construct(mainarr+currsize, std::move(mainarr[currsize-1]));
+            construct(mainarr+currsize, std::move_if_noexcept(mainarr[currsize-1]));
             for(size_t i = currsize-1; i>pos; i--) {
-                mainarr[i] = std::move(mainarr[i-1]);
+                mainarr[i] = std::move_if_noexcept(mainarr[i-1]);
             }
             mainarr[pos] = val;
             currsize++;
@@ -396,19 +399,19 @@ class Vector {
             assert(ind>=(this->begin()) && ind<=(this->end()));
             size_t pos = ind - this->begin();
             if(pos == currsize) {
-                this->emplace_back(std::move(val));
+                this->emplace_back(std::move_if_noexcept(val));
                 return;
             }
             if(currsize+1 > cap) {
                 T* newarr = allocate(2*cap);
                 for(size_t i = 0; i<pos; i++) {
-                    construct(newarr+i, std::move(mainarr[i]));
+                    construct(newarr+i, std::move_if_noexcept(mainarr[i]));
                 }
                 for(size_t i = currsize; i>pos; i--) {
-                    construct(newarr+i, std::move(mainarr[i-1]));
+                    construct(newarr+i, std::move_if_noexcept(mainarr[i-1]));
                     
                 }
-                construct(newarr+pos, std::move(val));
+                construct(newarr+pos, std::move_if_noexcept(val));
                 if constexpr (!std::is_trivially_destructible_v<T>) {
                     destroy_all(mainarr, currsize);
                 }
@@ -418,11 +421,11 @@ class Vector {
                 currsize++;
                 return;
             }
-            construct(mainarr+currsize, std::move(mainarr[currsize-1]));
+            construct(mainarr+currsize, std::move_if_noexcept(mainarr[currsize-1]));
             for(size_t i = currsize-1; i>pos; i--) {
-                mainarr[i] = std::move(mainarr[i-1]);
+                mainarr[i] = std::move_if_noexcept(mainarr[i-1]);
             }
-            mainarr[pos] = std::move(val);
+            mainarr[pos] = std::move_if_noexcept(val);
             currsize++;
         }
 
@@ -437,7 +440,7 @@ void Vector<T, Alloc>::grow() {
     }
     else {
         for(size_t i = 0; i<currsize; i++) {
-            construct(newarr+i, std::move(mainarr[i]));
+            construct(newarr+i, std::move_if_noexcept(mainarr[i]));
         }
     }
     if constexpr (!std::is_trivially_destructible_v<T>) {
@@ -447,3 +450,5 @@ void Vector<T, Alloc>::grow() {
     cap *= 2;
     mainarr = newarr;
 }
+
+#endif
