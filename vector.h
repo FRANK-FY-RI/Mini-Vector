@@ -73,7 +73,7 @@ class Vector {
             cap = std::max<size_t>((size_t)1, 2*currsize);
             mainarr = allocate(cap);
             size_t i = 0;
-            for(const auto x:l) {
+            for(const auto &x:l) {
                 construct(mainarr+i, x);
                 i++;
             }
