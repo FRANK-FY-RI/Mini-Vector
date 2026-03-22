@@ -298,6 +298,7 @@ class Vector {
                 currsize = size;
             }
             else {
+                if(size>cap) this->reserve(size);
                 for(size_t i = currsize; i<size; i++) {
                     this->emplace_back(T());
                 }
@@ -315,6 +316,7 @@ class Vector {
                 currsize = size;
             }
             else {
+                if(size>cap) this->reserve(size);
                 for(size_t i = currsize; i<size; i++) {
                     this->emplace_back(val);
                 }
