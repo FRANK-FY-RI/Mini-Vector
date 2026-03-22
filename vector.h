@@ -290,8 +290,10 @@ class Vector {
         //Function resize
         void resize(size_t size) {
             if(size<=currsize) {
-                for(size_t i = size; i<currsize; i++) {
-                    destroy(mainarr+i);
+                if constexpr (!std::is_trivially_destructible_v<T>) {
+                    for(size_t i = size; i<currsize; i++) {
+                        destroy(mainarr+i);
+                    }
                 }
                 currsize = size;
             }
@@ -305,8 +307,10 @@ class Vector {
         //Function resize with val
         void resize(size_t size, const T& val) {
             if(size<=currsize) {
-                for(size_t i = size; i<currsize; i++) {
-                    destroy(mainarr+i);
+                if constexpr (!std::is_trivially_destructible_v<T>) {
+                    for(size_t i = size; i<currsize; i++) {
+                        destroy(mainarr+i);
+                    }
                 }
                 currsize = size;
             }
