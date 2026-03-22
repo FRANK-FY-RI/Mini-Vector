@@ -4,12 +4,14 @@
 #include <iostream>
 #include <unordered_map>
 #include <iomanip>
+#include <string>
 #include <numeric>
 
 using ll = long long;
 
 const size_t N = 5e7;
 const size_t M = 5e4;
+const size_t P = 1e7;
 
 static uint32_t rng_state = 123456789;
 inline uint32_t fast_rand() {
@@ -21,7 +23,7 @@ inline uint32_t fast_rand() {
     return x;
 }
 
-static int t = 0;
+static int run_ind = 0;
 
 std::unordered_map<std::string, std::vector<double>> benchv;
 
@@ -37,7 +39,7 @@ class timer {
         auto end = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end-start);
         if(!benchv.contains(s)) benchv[s] = std::vector<double>(2);
-        benchv[s][t&1] += static_cast<double>(duration.count());
+        benchv[s][run_ind] += static_cast<double>(duration.count());
     }
 };
 
@@ -90,7 +92,7 @@ void benchmark() {
         std::iota(v.begin(), v.end(), 0);
     
         timer t("random read");
-        ll sum = 0;
+        volatile ll sum = 0;
         for(size_t i = 0; i<N; i++) {
             uint32_t r = fast_rand();
             uint64_t ind = (uint64_t(r)*N) >> 32;
@@ -143,11 +145,11 @@ void benchmark() {
 
     //range erase stress test
     {
-        Vec v(10000000);
+        Vec v(P);
         std::iota(v.begin(), v.end(), 0);
         timer t("range erase stress test");
         for(int i = 0; i<100; i++) {
-            v.erase(v.begin(), v.begin()+100000);
+            v.erase(v.begin(), v.begin()+M);
         }
     }
     
@@ -201,7 +203,7 @@ void benchmark() {
     {
         Vec v1(N);
         std::iota(v1.begin(), v1.end(), 0);
-        Vec v2(100000);
+        Vec v2(M);
         std::iota(v2.begin(), v2.end(), 0);
         timer t("Copy Assignment");
         v2 = v1;
@@ -219,7 +221,7 @@ void benchmark() {
     {
         Vec v1(N);
         std::iota(v1.begin(), v1.end(), 0);
-        Vec v2(100000);
+        Vec v2(M);
         std::iota(v2.begin(), v2.end(), 0);
         timer t("Move Assignment");
         v2 = std::move(v1);
@@ -229,15 +231,20 @@ void benchmark() {
 int main() {
     std::ios::sync_with_stdio(0);
     std::cin.tie(nullptr);
-    for(int i = 0; i<100; i++) {
+    const int iter = 100;
+    for(int i = 0; i<iter; i++) {
+        run_ind = 0;
+        rng_state = 123456789;
         benchmark<Vector<int>>();
-        t++;
+        run_ind = 1;
+        rng_state = 123456789;
         benchmark<std::vector<int>>();
     }
+    std::cout<<std::setw(45)<<"My_vector:"<<std::setw(32)<<"std::vector\n";
     for(const auto &it:benchv) {
         std::cout<<std::left<<std::setw(35)<<it.first;
-        double time1 = (1.0*it.second[0])/1.0;
-        double time2 = (1.0*it.second[1])/1.0;
+        double time1 = (1.0*it.second[0])/iter;
+        double time2 = (1.0*it.second[1])/iter;
         std::cout<<std::fixed<<std::setprecision(5)
                  <<std::setw(30)<<time1
                  <<std::setw(30)<<time2<<'\n';
