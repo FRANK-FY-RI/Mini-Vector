@@ -1,11 +1,11 @@
-# 🚀 Mini Vector – Custom C++ Dynamic Array Implementation
+# Mini Vector – Custom C++ Dynamic Array Implementation
 
 A lightweight implementation of a `std::vector`-like container written in modern C++.
 This project focuses on **manual memory management, copy/move semantics, performance benchmarking**, and understanding how STL containers work internally.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 .
@@ -32,19 +32,19 @@ This project focuses on **manual memory management, copy/move semantics, perform
 
 ---
 
-## ✨ Features
+## Features
 
-* ✅ Dynamic resizing
-* ✅ Custom Allocator Support
-* ✅ Deep copy (copy constructor & copy assignment)
-* ✅ Move semantics (move constructor & move assignment)
-* ✅ Optimized copying for trivially copyable types
-* ✅ Bounds-safe operations (with assertions)
-* ✅ Performance benchmarking vs `std::vector`
+* Dynamic resizing
+* Custom Allocator Support
+* Deep copy (copy constructor & copy assignment)
+* Move semantics (move constructor & move assignment)
+* Optimized copying for trivially copyable types
+* Bounds-safe operations (with assertions)
+* Performance benchmarking vs `std::vector`
 
 ---
 
-## 🧠 Implemented Operations
+## Implemented Operations
 
 * `push_back`
 * `emplace_back`
@@ -65,7 +65,7 @@ This project focuses on **manual memory management, copy/move semantics, perform
 
 ---
 
-## ⚙️ Build & Run Benchmarks
+##  Build & Run Benchmarks
 
 ### Compile
 
@@ -102,12 +102,11 @@ This prints timing results for multiple operations such as:
 
 ---
 
-## 📊 Benchmark Results
+## Benchmark Results
 
-Benchmark results are stored in:
+Benchmark results are stored in `benchmark/results.csv`
 
-* 📄 `benchmark/results.csv`
-* 🖼️ `benchmark/benchmark.png`
+[![Benchmark against `std::vector<int>`](benchmark/benchmark.png)](benchmark/benchmark.png)
 
 Example comparison:
 
@@ -125,7 +124,7 @@ These benchmarks help analyze:
 
 ---
 
-## 🎯 Motivation
+## Motivation
 
 This project was built to:
 
@@ -136,7 +135,7 @@ This project was built to:
 
 ---
 
-## 📌 Future Improvements
+## Future Improvements
 
 * Exception safety guarantees
 * Small buffer optimization
@@ -144,7 +143,7 @@ This project was built to:
 
 ---
 
-## 📜 License
+## License
 
 This project is for learning and experimentation purposes.
 
