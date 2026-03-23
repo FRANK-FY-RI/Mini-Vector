@@ -167,7 +167,9 @@ void benchmark() {
         Vec v(N);
         std::iota(v.begin(), v.end(), 0);
         timer t("pop_back");
+        volatile ll sum = 0;
         for(size_t i = 0; i<N; i++) {
+            sum += v[v.size()-1];
             v.pop_back();
         }
     }
