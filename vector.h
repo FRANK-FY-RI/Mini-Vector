@@ -200,7 +200,7 @@ class Vector {
         //Function pop_back
         void pop_back() {
             assert(currsize>0);
-            if constexpr (!std::trivially_destructible_v<T>) {
+            if constexpr (!std::is_trivially_destructible_v<T>) {
                 destroy(mainarr+currsize-1);
             } 
             currsize--;
