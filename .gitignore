@@ -1,0 +1,8 @@
+*.out
+main*
+test*
+benchmark
+*.py
+*.exe
+*.in
+*.ans
